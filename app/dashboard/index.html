@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard de Estoque</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="/static/js/dashboard.js" defer></script>
+
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📊 Painel de Desempenho de Produtos</h1>
+      <p id="atualizacao">Carregando...</p>
+    </header>
+
+    <!-- Filtros -->
+    <section class="filters">
+      <label for="filtroCurva">Curva:</label>
+      <select id="filtroCurva">
+        <option value="todas">Todas</option>
+        <option value="A">Curva A</option>
+        <option value="B">Curva B</option>
+        <option value="C">Curva C</option>
+      </select>
+
+      <input type="text" id="filtroProduto" placeholder="Buscar produto (SKU ou nome)...">
+      <button id="btnFiltrar">🔎 Filtrar</button>
+    </section>
+
+    <!-- Cards -->
+    <section class="cards">
+      <div class="card blue">
+        <h3>Total em Estoque</h3>
+        <p id="total_estoque">0</p>
+      </div>
+      <div class="card green">
+        <h3>Lucro Total</h3>
+        <p id="lucro_total">R$ 0,00</p>
+      </div>
+      <div class="card orange">
+        <h3>Produtos Ativos</h3>
+        <p id="total_produtos">0</p>
+      </div>
+    </section>
+
+    <!-- Gráficos -->
+    <section class="charts">
+      <div class="chart-container">
+        <h3>Distribuição ABC</h3>
+        <canvas id="curvaChart"></canvas>
+      </div>
+
+      <div class="chart-container">
+        <h3>Margem de Lucro (%)</h3>
+        <canvas id="margemChart"></canvas>
+      </div>
+
+      <div class="chart-container wide">
+        <h3>Top 10 Produtos por Lucro</h3>
+        <canvas id="lucroChart"></canvas>
+      </div>
+    </section>
+  </div>
+
+  <script src="static/js/dashboard.js"></script>
+</body>
+</html>

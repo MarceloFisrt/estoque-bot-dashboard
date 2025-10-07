@@ -1,0 +1,32 @@
+.filters {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.filters label {
+  font-weight: 600;
+}
+
+.filters select, .filters input {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 1em;
+}
+
+.filters button {
+  background-color: #0984e3;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1em;
+}
+
+.filters button:hover {
+  background-color: #74b9ff;
+}
