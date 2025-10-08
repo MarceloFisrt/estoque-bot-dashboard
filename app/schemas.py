@@ -1,8 +1,10 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 
 
 class ProductBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     sku: str
     name: str
@@ -13,6 +15,8 @@ class ProductBase(BaseModel):
     curve: Optional[str] = None
 
 class CurvaABCItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     sku: str
     name: str

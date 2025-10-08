@@ -2,9 +2,14 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from dotenv import load_dotenv
 import os
+from pathlib import Path
 
-load_dotenv()
+# Carregar o .env da raiz do projeto sempre
+env_path = Path(__file__).parent.parent / '.env'
+load_dotenv(dotenv_path=env_path, override=True)
 DATABASE_URL = os.getenv("DATABASE_URL")
+
+print(f"[DATABASE] Carregando DATABASE_URL: {DATABASE_URL}")  # Debug
 
 if not DATABASE_URL:
 	# Deixar aqui para facilitar debugging quando .env não estiver configurado

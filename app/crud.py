@@ -47,7 +47,15 @@ def get_curva_abc(db: Session) -> List[Dict[str, Any]]:
     for p in produtos:
         sale = _to_float(p.sale_price)
         stock = int(p.stock or 0)
-        valor_total = round(sale * stock, 4)
+        
+        # Se não há estoque, usar apenas o preço de venda como critério
+        # Se há estoque, usar valor total (preço × estoque)
+        if stock > 0:
+            valor_total = round(sale * stock, 4)
+        else:
+            # Para produtos sem estoque, usar o preço como critério de importância
+            valor_total = round(sale, 4)
+            
         items.append({
             "id": p.id,
             "sku": p.sku,
@@ -67,7 +75,11 @@ def get_curva_abc(db: Session) -> List[Dict[str, Any]]:
     for it in items:
         acumulado += it["valor_total"]
         perc_acum = (acumulado / soma * 100) if soma > 0 else 0.0
-        # determinar curva
+        
+        # Determinar curva baseado no percentual acumulado
+        # Os primeiros produtos que somam até 80% = Curva A
+        # Os próximos que somam de 80% a 95% = Curva B  
+        # Os restantes (95% a 100%) = Curva C
         if perc_acum <= 80:
             curva = "A"
         elif perc_acum <= 95:

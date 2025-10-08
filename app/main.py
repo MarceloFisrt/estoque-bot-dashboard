@@ -7,7 +7,7 @@ from fastapi.responses import HTMLResponse, FileResponse
 from pathlib import Path
 import os
 
-from app import crud, schemas
+from app import crud, schemas, models
 from app.database import SessionLocal
 from app.logger import get_logger
 from sqlalchemy import text
@@ -22,34 +22,12 @@ logger = get_logger()
 
 app = FastAPI()
 
-# === CORS (permite o front acessar o backend) ===
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # pode restringir para ['http://127.0.0.1:8000'] depois
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# === Arquivos estáticos (CSS, JS, imagens) ===
-from pathlib import Path
-from fastapi.responses import FileResponse
-
-app.mount("/static", StaticFiles(directory=Path("app/dashboard/static")), name="static")
-
-# === Rota principal para o dashboard ===
-@app.get("/", response_class=HTMLResponse)
-async def serve_dashboard():
-    return FileResponse("app/dashboard/index.html")
-
-
-
+# === CORS Configuration ===
 origins_env = os.getenv("CORS_ORIGINS", "*")
 if origins_env == "*" or origins_env == "":
     allow_origins = ["*"]
 else:
     allow_origins = [o.strip() for o in origins_env.split(",") if o.strip()]
-    
 
 app.add_middleware(
     CORSMiddleware,
@@ -57,8 +35,22 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-
 )
+
+# === Arquivos estáticos (CSS, JS, imagens) ===
+static_dir = Path(__file__).parent / "dashboard" / "static"
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+# === Rota principal para o dashboard ===
+@app.get("/", response_class=HTMLResponse)
+async def serve_dashboard():
+    dashboard_file = Path(__file__).parent / "dashboard" / "index.html"
+    return FileResponse(dashboard_file)
+
+@app.get("/dashboard/", response_class=HTMLResponse)
+async def serve_dashboard_with_slash():
+    dashboard_file = Path(__file__).parent / "dashboard" / "index.html"
+    return FileResponse(dashboard_file)
 
 def get_db():
     db = SessionLocal()
@@ -71,23 +63,38 @@ def get_db():
 def health():
     return {"status": "ok"}
 
-@app.get("/curvaabc", response_model=List[schemas.CurvaABCItem])
+@app.get("/curvaabc")
 def curva_abc(db: Session = Depends(get_db)):
     logger.info("Chamando /curvaabc")
-    return crud.get_curva_abc(db)
+    try:
+        result = crud.get_curva_abc(db)
+        return result
+    except Exception as e:
+        logger.error(f"Erro em /curvaabc: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/duplicates")
 def duplicates(db: Session = Depends(get_db)):
     logger.info("Chamando /duplicates")
-    return crud.get_duplicates(db)
+    try:
+        result = crud.get_duplicates(db)
+        return result
+    except Exception as e:
+        logger.error(f"Erro em /duplicates: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/curva/{tipo}", response_model=List[schemas.ProductBase])
+@app.get("/curva/{tipo}")
 def produtos_por_curva(tipo: str, db: Session = Depends(get_db)):
     tipo = tipo.upper()
     if tipo not in ("A","B","C"):
         raise HTTPException(status_code=400, detail="Curva inválida: use A, B ou C")
     logger.info(f"Chamando /curva/{tipo}")
-    return crud.get_produtos_por_curva(db, tipo)
+    try:
+        result = crud.get_produtos_por_curva(db, tipo)
+        return result
+    except Exception as e:
+        logger.error(f"Erro em /curva/{tipo}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
     
 @app.get("/lucro/curvas", response_model=List[schemas.PercentualLucro])
 def lucro_por_curva(db:Session = Depends(get_db)):
@@ -125,100 +132,67 @@ def custom_openapi():
     return app.openapi_schema
 
 app.openapi = custom_openapi
-# --- fim da correção ---
-
-from fastapi import APIRouter, Query
-from app.database import SessionLocal
-
-
-router = APIRouter()
-
-@router.get("/dashboard/dados")
+# Dados para o dashboard
+@app.get("/dashboard/dados")
 def get_dados_dashboard(curva: str = "todas", produto: str = ""):
-    db = SessionLocal()
-
-    query = text("SELECT sku, name, sale_price, cost_price, stock, curve FROM products WHERE 1=1")
-    produtos = db.execute(query, params).fetchall()
-
-    if curva != "todas":
-        query += " AND curve = ?"
-        params.append(curva)
-
-    if produto:
-        query += " AND (sku LIKE ? OR name LIKE ?)"
-        params.extend([f"%{produto}%", f"%{produto}%"])
-
-    produtos = db.execute(query, params).fetchall()
-
-    total_produtos = len(produtos)
-    lucro_total = sum([(p[2] - p[3]) * p[4] for p in produtos])
-    curvaA = sum(1 for p in produtos if p[5] == "A")
-    curvaB = sum(1 for p in produtos if p[5] == "B")
-    curvaC = sum(1 for p in produtos if p[5] == "C")
-
-    top = sorted(produtos, key=lambda p: (p[2] - p[3]) * p[4], reverse=True)[:10]
-    produtos_top = [p[1] for p in top]
-    lucros_top = [(p[2] - p[3]) * p[4] for p in top]
-
-    return {
-        "atualizacao": "07/10/2025 15:55",
-        "total_produtos": total_produtos,
-        "lucro_total": lucro_total,
-        "curvaA": curvaA,
-        "curvaB": curvaB,
-        "curvaC": curvaC,
-        "produtos_top": produtos_top,
-        "lucros_top": lucros_top
-    }
-
-@router.get("/dashboard/dados")
-def get_dados_dashboard(curva: str = "todas", produto: str = ""):
+    from datetime import datetime
     db = SessionLocal()
     try:
-        query = text("""
-            SELECT sku, name, sale_price, cost_price, stock, curve
-            FROM products
-            WHERE 1=1
-        """)
-        params = {}
-
-        if curva.lower() != "todas":
-            query = text(str(query) + " AND curve = :curva")
-            params["curva"] = curva.upper()
-
+        # Buscar produtos com filtros
+        query = db.query(models.Product)
+        
+        if curva != "todas":
+            query = query.filter(models.Product.curve == curva.upper())
+            
         if produto:
-            query = text(str(query) + " AND (sku LIKE :produto OR name LIKE :produto)")
-            params["produto"] = f"%{produto}%"
-
-        produtos = db.execute(query, params).fetchall()
-
+            query = query.filter(
+                (models.Product.sku.ilike(f"%{produto}%")) | 
+                (models.Product.name.ilike(f"%{produto}%"))
+            )
+        
+        produtos = query.all()
+        
+        # Calcular estatísticas
         total_produtos = len(produtos)
-        lucro_total = sum([(p[2] - p[3]) * p[4] for p in produtos])
-        curvaA = sum(1 for p in produtos if p[5] == "A")
-        curvaB = sum(1 for p in produtos if p[5] == "B")
-        curvaC = sum(1 for p in produtos if p[5] == "C")
-
-        top = sorted(produtos, key=lambda p: (p[2] - p[3]) * p[4], reverse=True)[:10]
-        produtos_top = [p[1] for p in top]
-        lucros_top = [(p[2] - p[3]) * p[4] for p in top]
-
+        lucro_total = sum([
+            ((p.sale_price or 0) - (p.cost_price or 0)) * (p.stock or 0) 
+            for p in produtos
+        ])
+        
+        curvaA = sum(1 for p in produtos if p.curve == "A")
+        curvaB = sum(1 for p in produtos if p.curve == "B") 
+        curvaC = sum(1 for p in produtos if p.curve == "C")
+        
+        # Top 10 produtos por lucro
+        produtos_ordenados = sorted(
+            produtos, 
+            key=lambda p: ((p.sale_price or 0) - (p.cost_price or 0)) * (p.stock or 0), 
+            reverse=True
+        )[:10]
+        
+        produtos_top = [p.name for p in produtos_ordenados]
+        lucros_top = [
+            ((p.sale_price or 0) - (p.cost_price or 0)) * (p.stock or 0) 
+            for p in produtos_ordenados
+        ]
+        
         return {
-            "atualizacao": "07/10/2025 15:55",
+            "atualizacao": datetime.now().strftime("%d/%m/%Y %H:%M"),
             "total_produtos": total_produtos,
-            "lucro_total": lucro_total,
+            "lucro_total": float(lucro_total),
             "curvaA": curvaA,
             "curvaB": curvaB,
             "curvaC": curvaC,
             "produtos_top": produtos_top,
-            "lucros_top": lucros_top,
+            "lucros_top": [float(l) for l in lucros_top]
         }
-
+        
     except Exception as e:
-        print("❌ Erro no get_dados_dashboard:", e)
-        raise
+        logger.error(f"Erro em /dashboard/dados: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
 
-
-
-app.include_router(router)
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
