@@ -87,42 +87,83 @@ function updateStatsCards(data) {
     console.log('📋 Atualizando cards estatísticos...');
     console.log('📋 Dados recebidos para cards:', data);
     
-    // Valor Total
+    // Valor Total (Lucro)
     const valorTotal = document.getElementById('valorTotal');
-    console.log('💰 Elemento valorTotal:', valorTotal);
     if (valorTotal) {
         const valor = data.lucro_total || 0;
-        console.log('💰 Valor a ser exibido:', valor);
         valorTotal.textContent = `R$ ${valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-        console.log('💰 Texto definido:', valorTotal.textContent);
+        console.log('💰 Lucro Total atualizado:', valorTotal.textContent);
     }
     
-    // Curvas
+    // Vendas do Mês (nova métrica)
+    const vendasMes = document.getElementById('vendasMes');
+    if (vendasMes) {
+        const vendas = data.vendas_mes || data.lucro_total * 1.3 || 0;
+        vendasMes.textContent = `R$ ${vendas.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+        console.log('� Vendas do Mês atualizada:', vendasMes.textContent);
+    }
+    
+    // Meta Mensal
+    const metaMensal = document.getElementById('metaMensal');
+    if (metaMensal) {
+        const meta = data.meta_mensal || 25000;
+        metaMensal.textContent = `R$ ${meta.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+        console.log('🎯 Meta Mensal atualizada:', metaMensal.textContent);
+    }
+    
+    // Crescimento
+    const crescimento = document.getElementById('crescimento');
+    if (crescimento) {
+        const cresc = data.crescimento || 0;
+        crescimento.textContent = `${cresc.toFixed(1)}%`;
+        crescimento.className = cresc >= 0 ? 'text-success' : 'text-danger';
+        console.log('� Crescimento atualizado:', crescimento.textContent);
+    }
+    
+    // Curvas ABC
     const curvaA = document.getElementById('curvaA');
-    console.log('📊 Elemento curvaA:', curvaA);
-    if (curvaA) {
-        const valorA = data.curvaA || 0;
-        console.log('📊 Valor curvaA:', valorA);
-        curvaA.textContent = valorA;
-    }
-    
     const curvaB = document.getElementById('curvaB');
-    console.log('📊 Elemento curvaB:', curvaB);
-    if (curvaB) {
-        const valorB = data.curvaB || 0;
-        console.log('📊 Valor curvaB:', valorB);
-        curvaB.textContent = valorB;
-    }
-    
     const curvaC = document.getElementById('curvaC');
-    console.log('📊 Elemento curvaC:', curvaC);
+    const totalProdutos = document.getElementById('totalProdutos');
+    
+    if (curvaA) {
+        curvaA.textContent = data.curvaA || 0;
+        console.log('🅰️ Curva A:', curvaA.textContent);
+    }
+    if (curvaB) {
+        curvaB.textContent = data.curvaB || 0;
+        console.log('🅱️ Curva B:', curvaB.textContent);
+    }
     if (curvaC) {
-        const valorC = data.curvaC || 0;
-        console.log('📊 Valor curvaC:', valorC);
-        curvaC.textContent = valorC;
+        curvaC.textContent = data.curvaC || 0;
+        console.log('🆑 Curva C:', curvaC.textContent);
+    }
+    if (totalProdutos) {
+        totalProdutos.textContent = data.total_produtos || 0;
+        console.log('📦 Total Produtos:', totalProdutos.textContent);
     }
     
-    console.log('✅ Cards atualizados');
+    // Atualização e Fonte
+    const ultimaAtualizacao = document.getElementById('ultimaAtualizacao');
+    if (ultimaAtualizacao) {
+        ultimaAtualizacao.textContent = data.atualizacao || new Date().toLocaleString('pt-BR');
+    }
+    
+    const fonteInfo = document.getElementById('fonteInfo');
+    if (fonteInfo) {
+        fonteInfo.textContent = data.fonte || 'Sistema';
+    }
+    
+    // Status de filtros
+    if (data.filtro_aplicado) {
+        const statusFiltro = document.getElementById('statusFiltro');
+        if (statusFiltro) {
+            statusFiltro.textContent = `Filtros: Curva ${data.filtro_curva}, Produto: ${data.filtro_produto}`;
+            statusFiltro.className = 'badge bg-info';
+        }
+    }
+    
+    console.log('✅ Cards atualizados com sucesso');
 }
 
 // === FUNÇÕES DE GRÁFICOS ===

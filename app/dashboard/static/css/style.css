@@ -755,3 +755,135 @@ canvas:hover {
     width: 100%;
   }
 }
+
+/* === NOVOS ESTILOS PARA DASHBOARD MELHORADO === */
+
+/* Grid KPI expandido */
+.kpi-grid {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+/* Novos tipos de cards KPI */
+.kpi-card.sales::before {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.kpi-card.target::before {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+.kpi-card.growth::before {
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+}
+
+.kpi-card.total::before {
+  background: linear-gradient(135deg, #d299c2 0%, #fef9d7 100%);
+}
+
+.kpi-card.sales:hover::before {
+  background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+}
+
+.kpi-card.target:hover::before {
+  background: linear-gradient(135deg, #fee140 0%, #fa709a 100%);
+}
+
+.kpi-card.growth:hover::before {
+  background: linear-gradient(135deg, #fed6e3 0%, #a8edea 100%);
+}
+
+.kpi-card.total:hover::before {
+  background: linear-gradient(135deg, #fef9d7 0%, #d299c2 100%);
+}
+
+/* Barra de informações */
+.info-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+.info-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 12px 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  flex: 1;
+  min-width: 200px;
+}
+
+.info-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.info-label {
+  font-weight: 600;
+  color: #666;
+  font-size: 0.9rem;
+  margin-right: 8px;
+}
+
+.info-value {
+  font-weight: 500;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+/* Status badges */
+.badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+.bg-info {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.bg-success {
+  background-color: #28a745;
+  color: white;
+}
+
+.bg-warning {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+/* Cores para crescimento */
+.text-success {
+  color: #28a745 !important;
+  font-weight: 600;
+}
+
+.text-danger {
+  color: #dc3545 !important;
+  font-weight: 600;
+}
+
+/* Responsividade para novos elementos */
+@media (max-width: 768px) {
+  .kpi-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+  }
+  
+  .info-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .info-card {
+    min-width: auto;
+  }
+}
