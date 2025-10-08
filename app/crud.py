@@ -1,8 +1,9 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, extract
 from . import models
 from decimal import Decimal
 from typing import List, Dict, Any
+from datetime import datetime
 
 
 def _to_float(v):
@@ -191,3 +192,63 @@ def get_duplicates(db: Session) -> Dict[str, List[Dict[str, Any]]]:
         res["name"] = [{"name": n, "qtd": int(c)} for n, c in name_dupes]
 
     return res
+
+
+def calcular_curva_abc(produtos):
+    """
+    Versão melhorada do cálculo da Curva ABC
+    Calcula baseado no valor total (estoque * preço de venda)
+    """
+    # Calcular valor total para cada produto
+    produtos_com_valor = []
+    for p in produtos:
+        valor_total = p.stock * float(p.sale_price or 0)
+        produtos_com_valor.append({
+            'produto': p,
+            'valor_total': valor_total
+        })
+    
+    # Ordenar por valor total (decrescente)
+    produtos_com_valor.sort(key=lambda x: x['valor_total'], reverse=True)
+    
+    # Calcular total geral
+    total_geral = sum(item['valor_total'] for item in produtos_com_valor)
+    
+    # Classificar produtos
+    acumulado = 0
+    resultado = []
+    
+    for item in produtos_com_valor:
+        produto = item['produto']
+        valor = item['valor_total']
+        acumulado += valor
+        percentual_acumulado = (acumulado / total_geral) * 100 if total_geral > 0 else 0
+        
+        # Determinar curva
+        if percentual_acumulado <= 80:
+            produto.curve = "A"
+        elif percentual_acumulado <= 95:
+            produto.curve = "B"
+        else:
+            produto.curve = "C"
+            
+        resultado.append(produto)
+    
+    return resultado
+
+
+def evolucao_curva_abc(db: Session, data_inicio: datetime, data_fim: datetime):
+    """
+    Retorna a evolução das curvas ABC por mês dentro do período especificado
+    """
+    query = (
+        db.query(
+            func.strftime('%Y-%m', models.Product.created_at).label('mes'),
+            models.Product.curve,
+            func.count(models.Product.id).label('quantidade')
+        )
+        .filter(models.Product.created_at >= data_inicio, models.Product.created_at <= data_fim)
+        .group_by('mes', models.Product.curve)
+        .order_by('mes')
+    )
+    return query.all()

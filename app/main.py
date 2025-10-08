@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
@@ -6,12 +6,14 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, FileResponse
 from pathlib import Path
 import os
+from datetime import datetime
 
 from app import crud, schemas, models
 from app.database import SessionLocal
 from app.logger import get_logger
 from sqlalchemy import text
 from fastapi.responses import FileResponse
+from app.services.tiny_service import fetch_tiny_vendas, listar_produtos_tiny, fetch_tiny_estoque
 
 
 
@@ -193,6 +195,159 @@ def get_dados_dashboard(curva: str = "todas", produto: str = ""):
     finally:
         db.close()
 
+# === Endpoints da API Tiny ERP ===
+@app.get("/tiny/vendas")
+def get_tiny_vendas():
+    """Busca vendas da API do Tiny ERP"""
+    logger.info("Chamando /tiny/vendas")
+    try:
+        data = fetch_tiny_vendas()
+        return data
+    except Exception as e:
+        logger.error(f"Erro em /tiny/vendas: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/tiny/produtos")
+def get_tiny_produtos():
+    """Busca produtos da API do Tiny ERP"""
+    logger.info("Chamando /tiny/produtos")
+    try:
+        data = listar_produtos_tiny()
+        return data
+    except Exception as e:
+        logger.error(f"Erro em /tiny/produtos: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/tiny/estoque")
+def get_tiny_estoque():
+    """Busca estoque da API do Tiny ERP"""
+    logger.info("Chamando /tiny/estoque")
+    try:
+        data = fetch_tiny_estoque()
+        return data
+    except Exception as e:
+        logger.error(f"Erro em /tiny/estoque: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# === Endpoint para recalcular Curva ABC ===
+@app.post("/curvaabc/recompute")
+def recompute_curva_abc():
+    """Recalcula e atualiza a Curva ABC no banco de dados"""
+    logger.info("Chamando /curvaabc/recompute")
+    db = SessionLocal()
+    try:
+        from decimal import Decimal, InvalidOperation
+        
+        produtos = db.query(models.Product).all()
+        items = []
+        total = Decimal('0')
+        
+        for p in produtos:
+            try:
+                price = Decimal(str(p.sale_price or 0))
+            except InvalidOperation:
+                price = Decimal('0')
+            qty = p.stock or 0
+            value = price * Decimal(qty)
+            items.append((p, value))
+            total += value
+
+        if total == 0:
+            items = sorted(items, key=lambda t: t[0].stock or 0, reverse=True)
+            total = sum((t[0].stock or 0) for t in items) or 1
+
+        items.sort(key=lambda t: t[1], reverse=True)
+
+        acumulado = Decimal('0')
+        for p, val in items:
+            acumulado += val
+            pct = (acumulado / total) * 100
+            if pct <= Decimal('80'):
+                p.curve = 'A'
+            elif pct <= Decimal('95'):
+                p.curve = 'B'
+            else:
+                p.curve = 'C'
+            db.add(p)
+
+        db.commit()
+        logger.info(f"Curva ABC recalculada para {len(items)} produtos")
+        return {"ok": True, "updated": len(items)}
+        
+    except Exception as e:
+        logger.error(f"Erro em /curvaabc/recompute: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db.close()
+
+# === Endpoint para dados históricos das curvas ===
+@app.get("/curvaabc/historico")
+def get_curva_historico():
+    """Retorna dados históricos simulados das curvas ABC por mês"""
+    logger.info("Chamando /curvaabc/historico")
+    
+    try:
+        # Dados simulados baseados no padrão atual
+        # Em produção, isso viria de uma tabela de histórico
+        historico = {
+            "meses": ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", 
+                     "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"],
+            "curva_a": [2, 3, 1, 2, 2, 2, 2, 1, 3, 3, 4, 4],
+            "curva_b": [3, 4, 2, 3, 4, 3, 2, 4, 2, 3, 1, 2], 
+            "curva_c": [1, 2, 4, 3, 1, 2, 1, 4, 1, 3, 1, 4]
+        }
+        
+        return historico
+        
+    except Exception as e:
+        logger.error(f"Erro em /curvaabc/historico: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# === Endpoint para evolução das curvas com filtro de data ===
+@app.get("/curvaabc/evolucao")
+def curvaabc_evolucao(
+    inicio: str = Query(..., description="Data inicial no formato YYYY-MM-DD"),
+    fim: str = Query(..., description="Data final no formato YYYY-MM-DD")
+):
+    """Retorna a evolução das curvas ABC por mês dentro do período especificado"""
+    logger.info(f"Chamando /curvaabc/evolucao - {inicio} a {fim}")
+    
+    try:
+        db = SessionLocal()
+        data_inicio = datetime.strptime(inicio, "%Y-%m-%d")
+        data_fim = datetime.strptime(fim, "%Y-%m-%d")
+
+        result = crud.evolucao_curva_abc(db, data_inicio, data_fim)
+        db.close()
+
+        # Transforma o resultado em estrutura Chart.js
+        dados = {}
+        for r in result:
+            mes = r.mes
+            if mes not in dados:
+                dados[mes] = {"A": 0, "B": 0, "C": 0}
+            dados[mes][r.curve or "C"] = r.quantidade
+
+        meses = sorted(dados.keys())
+        curvaA = [dados[m]["A"] for m in meses]
+        curvaB = [dados[m]["B"] for m in meses]
+        curvaC = [dados[m]["C"] for m in meses]
+
+        return {"meses": meses, "A": curvaA, "B": curvaB, "C": curvaC}
+        
+    except Exception as e:
+        logger.error(f"Erro em /curvaabc/evolucao: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+
+from app.services.tiny_service import listar_produtos_tiny
+
+@app.get("/tiny/produtos")
+def listar_produtos(pagina: int = 1):
+    """
+    Retorna os produtos diretamente da API Tiny.
+    """
+    return listar_produtos_tiny(pagina)

@@ -389,6 +389,12 @@ canvas:hover {
   filter: brightness(1.05) saturate(1.1);
 }
 
+/* Estilo específico para o gráfico de evolução das curvas */
+#curvaEvolutionChart {
+  background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+  border: 1px solid rgba(75, 192, 192, 0.1);
+}
+
 .chart-header {
   display: flex;
   justify-content: space-between;
@@ -664,4 +670,88 @@ canvas:hover {
 
 .chart-card:nth-child(4) {
   animation-delay: 0.3s;
+}
+
+/* Filtros de Data */
+.filters-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-left: auto;
+}
+
+.date-filter {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.date-filter label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.date-input {
+  padding: 8px 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: #374151;
+  background-color: #ffffff;
+  transition: all 0.3s ease;
+  width: 140px;
+}
+
+.date-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.filter-btn {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+.filter-btn:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+  transform: translateY(-1px);
+}
+
+.filter-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+/* Responsividade para filtros */
+@media (max-width: 768px) {
+  .filters-container {
+    flex-direction: column;
+    gap: 10px;
+    margin-left: 0;
+    margin-top: 10px;
+  }
+  
+  .date-filter {
+    flex-direction: column;
+    gap: 5px;
+  }
+  
+  .date-input {
+    width: 100%;
+  }
+  
+  .filter-btn {
+    width: 100%;
+  }
 }

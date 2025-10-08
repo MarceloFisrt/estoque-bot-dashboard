@@ -103,9 +103,29 @@
         <div class="chart-card wide">
           <div class="chart-header">
             <h3>Análise de Performance</h3>
+            <div class="filters-container">
+              <div class="date-filter">
+                <label for="dataInicio">De:</label>
+                <input type="date" id="dataInicio" class="date-input">
+              </div>
+              <div class="date-filter">
+                <label for="dataFim">Até:</label>
+                <input type="date" id="dataFim" class="date-input">
+              </div>
+              <button id="filtrarEvolucao" class="filter-btn">Filtrar</button>
+            </div>
           </div>
           <div class="chart-container">
             <canvas id="trendChart"></canvas>
+          </div>
+        </div>
+        <div class="chart-card wide">
+          <div class="chart-header">
+            <h3>Evolução das Curvas ABC por Mês</h3>
+            <span class="chart-badge" id="curvaEvolutionBadge">Atualizado</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="curvaEvolutionChart"></canvas>
           </div>
         </div>
         <div class="chart-card">

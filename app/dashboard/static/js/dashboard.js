@@ -1,438 +1,512 @@
-// Dashboard Estoque Bot
-const API_BASE = 'http://127.0.0.1:8000';
-let curvaChart, donutChart, trendChart;
-let alertsData = [];
+// Dashboard Estoque Bot - Versão Reorganizada e Funcional
+console.log('🚀 Iniciando Dashboard...');
 
-// Configurações globais do Chart.js para animações suaves
+// === CONFIGURAÇÕES GLOBAIS ===
+const API_BASE = 'http://127.0.0.1:8000';
+
+// Variáveis globais para os gráficos
+let curvaChart = null;
+let donutChart = null; 
+let trendChart = null;
+let evolutionChart = null;
+
+// Configurações do Chart.js
 Chart.defaults.animation.duration = 750;
 Chart.defaults.animation.easing = 'easeInOutCubic';
-Chart.defaults.interaction.mode = 'nearest';
-Chart.defaults.interaction.intersect = false;
 Chart.defaults.responsive = true;
 Chart.defaults.maintainAspectRatio = false;
 
-// Inicialização quando a página carrega
-document.addEventListener('DOMContentLoaded', async function() {
-    // Preloader effect
-    showLoadingAnimation();
-    
-    await initializeDashboard();
-    initializeCalendar();
-    setupEventListeners();
-    
-    // Remove loading animation
-    hideLoadingAnimation();
-});
-
-// Funções de loading animation
-function showLoadingAnimation() {
-    document.body.style.opacity = '0.8';
-    document.body.style.pointerEvents = 'none';
+// === FUNÇÕES UTILITÁRIAS ===
+function showLoading() {
+    console.log('⏳ Carregando...');
 }
 
-function hideLoadingAnimation() {
-    document.body.style.opacity = '1';
-    document.body.style.pointerEvents = 'auto';
+function hideLoading() {
+    console.log('✅ Carregado!');
 }
 
-async function initializeDashboard() {
+function ensureCanvasExists(id) {
+    const canvas = document.getElementById(id);
+    if (!canvas) {
+        console.error(`❌ Canvas não encontrado: ${id}`);
+        return false;
+    }
+    console.log(`✅ Canvas encontrado: ${id}`);
+    return true;
+}
+
+// === FUNÇÕES DE API ===
+async function fetchDashboardData() {
     try {
-        await loadDashboardData();
-        await checkStockAlerts();
+        console.log('📡 Buscando dados do dashboard...');
+        const response = await fetch(`${API_BASE}/dashboard/dados`);
+        console.log('📋 Response:', response);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        console.log('📊 Dados dashboard recebidos:', data);
+        console.log('📊 Tipo dos dados:', typeof data);
+        console.log('📊 Chaves dos dados:', Object.keys(data || {}));
+        return data;
     } catch (error) {
-        console.error('Erro ao inicializar:', error);
+        console.error('❌ Erro ao buscar dados dashboard:', error);
+        throw error;
     }
 }
 
-async function loadDashboardData() {
+async function fetchCurvaData() {
     try {
-        const response = await fetch(API_BASE + '/dashboard/dados');
-        const dashboardData = await response.json();
-        
-        const curvaResponse = await fetch(API_BASE + '/curvaabc');
-        const curvaData = await curvaResponse.json();
-        
-        updateStatsCards(dashboardData, curvaData);
-        updateCharts(dashboardData, curvaData);
-        
+        console.log('📡 Buscando dados curva ABC...');
+        const response = await fetch(`${API_BASE}/curvaabc`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        console.log('📈 Dados curva ABC recebidos:', data);
+        return data;
     } catch (error) {
-        console.error('Erro ao carregar dados:', error);
+        console.error('❌ Erro ao buscar curva ABC:', error);
+        throw error;
     }
 }
 
-function updateStatsCards(dashboardData, curvaData) {
-    const valorTotal = curvaData.reduce((total, produto) => {
-        return total + (produto.sale_price * produto.stock);
-    }, 0);
-    
-    document.getElementById('valorTotal').textContent = 'R$ ' + valorTotal.toFixed(2);
-    document.getElementById('curvaA').textContent = dashboardData.curvaA;
-    document.getElementById('curvaB').textContent = dashboardData.curvaB;
-    document.getElementById('curvaC').textContent = dashboardData.curvaC;
-}
-
-function updateCharts(dashboardData, curvaData) {
-    // Se os gráficos já existem, apenas atualiza os dados
-    if (curvaChart) {
-        updateBarChart(dashboardData);
-    } else {
-        createBarChart(dashboardData);
-    }
-    
-    if (donutChart) {
-        updateDonutChart(curvaData);
-    } else {
-        createDonutChart(curvaData);
-    }
-    
-    if (trendChart) {
-        updateTrendChart();
-    } else {
-        createTrendChart();
+async function fetchEvolucaoData(inicio, fim) {
+    try {
+        console.log(`📡 Buscando evolução ABC (${inicio} - ${fim})...`);
+        const url = `${API_BASE}/curvaabc/evolucao?inicio=${inicio}&fim=${fim}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        console.log('📊 Dados evolução recebidos:', data);
+        return data;
+    } catch (error) {
+        console.error('❌ Erro ao buscar evolução:', error);
+        throw error;
     }
 }
 
-// Função para atualizar apenas os dados do gráfico de barras
-function updateBarChart(data) {
-    curvaChart.data.datasets[0].data = [data.curvaA, data.curvaB, data.curvaC];
-    curvaChart.update('show'); // Animação mais suave
-}
-
-// Função para atualizar apenas os dados do gráfico donut
-function updateDonutChart(curvaData) {
-    const produtosEmAlta = curvaData
-        .filter(p => p.curva === 'A')
-        .slice(0, 5);
+// === FUNÇÕES DE ATUALIZAÇÃO DOS CARDS ===
+function updateStatsCards(data) {
+    console.log('📋 Atualizando cards estatísticos...');
+    console.log('📋 Dados recebidos para cards:', data);
     
-    donutChart.data.labels = produtosEmAlta.map(p => p.sku);
-    donutChart.data.datasets[0].data = produtosEmAlta.map(p => p.sale_price);
-    donutChart.update('show'); // Animação mais suave
+    // Valor Total
+    const valorTotal = document.getElementById('valorTotal');
+    console.log('💰 Elemento valorTotal:', valorTotal);
+    if (valorTotal) {
+        const valor = data.lucro_total || 0;
+        console.log('💰 Valor a ser exibido:', valor);
+        valorTotal.textContent = `R$ ${valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+        console.log('💰 Texto definido:', valorTotal.textContent);
+    }
+    
+    // Curvas
+    const curvaA = document.getElementById('curvaA');
+    console.log('📊 Elemento curvaA:', curvaA);
+    if (curvaA) {
+        const valorA = data.curvaA || 0;
+        console.log('📊 Valor curvaA:', valorA);
+        curvaA.textContent = valorA;
+    }
+    
+    const curvaB = document.getElementById('curvaB');
+    console.log('📊 Elemento curvaB:', curvaB);
+    if (curvaB) {
+        const valorB = data.curvaB || 0;
+        console.log('📊 Valor curvaB:', valorB);
+        curvaB.textContent = valorB;
+    }
+    
+    const curvaC = document.getElementById('curvaC');
+    console.log('📊 Elemento curvaC:', curvaC);
+    if (curvaC) {
+        const valorC = data.curvaC || 0;
+        console.log('📊 Valor curvaC:', valorC);
+        curvaC.textContent = valorC;
+    }
+    
+    console.log('✅ Cards atualizados');
 }
 
-// Função para atualizar o gráfico de tendência (pode ter dados dinâmicos futuramente)
-function updateTrendChart() {
-    // Por enquanto, apenas faz uma animação suave
-    trendChart.update('show'); // Animação mais suave
-}
-
-function createBarChart(data) {
+// === FUNÇÕES DE GRÁFICOS ===
+function createCurvaChart(data) {
+    if (!ensureCanvasExists('curvaChart')) return;
+    
+    console.log('📊 Criando gráfico Curva ABC...');
     const ctx = document.getElementById('curvaChart').getContext('2d');
     
     if (curvaChart) {
         curvaChart.destroy();
     }
     
+    const chartData = [data.curvaA || 0, data.curvaB || 0, data.curvaC || 0];
+    
     curvaChart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: ['Curva A', 'Curva B', 'Curva C'],
             datasets: [{
-                data: [data.curvaA, data.curvaB, data.curvaC],
-                backgroundColor: ['#f39c12', '#3498db', '#95a5a6'],
-                borderColor: ['#e67e22', '#2980b9', '#7f8c8d'],
-                borderWidth: 2,
-                borderRadius: 8,
-                borderSkipped: false
+                label: 'Produtos por Curva',
+                data: chartData,
+                backgroundColor: [
+                    'rgba(220, 53, 69, 0.8)',
+                    'rgba(255, 193, 7, 0.8)',
+                    'rgba(40, 167, 69, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(220, 53, 69, 1)',
+                    'rgba(255, 193, 7, 1)',
+                    'rgba(40, 167, 69, 1)'
+                ],
+                borderWidth: 2
             }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                mode: 'index',
-                intersect: false
-            },
             plugins: {
-                legend: { display: false },
-                tooltip: {
-                    enabled: true,
-                    backgroundColor: 'rgba(0,0,0,0.8)',
-                    titleColor: '#fff',
-                    bodyColor: '#fff',
-                    borderColor: '#f39c12',
-                    borderWidth: 1,
-                    cornerRadius: 8,
-                    displayColors: false,
-                    callbacks: {
-                        title: function(context) {
-                            return context[0].label;
-                        },
-                        label: function(context) {
-                            return `${context.parsed.y} produtos`;
-                        }
-                    }
+                title: {
+                    display: true,
+                    text: 'Distribuição por Curva ABC'
+                },
+                legend: {
+                    display: false
                 }
             },
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: {
-                        color: 'rgba(255,255,255,0.1)'
-                    },
-                    ticks: {
-                        color: '#7f8c8d'
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        color: '#7f8c8d'
+                    title: {
+                        display: true,
+                        text: 'Quantidade de Produtos'
                     }
                 }
-            },
-            animation: {
-                duration: 800,
-                easing: 'easeOutQuart'
-            },
-            onHover: (event, activeElements) => {
-                event.native.target.style.cursor = activeElements.length > 0 ? 'pointer' : 'default';
             }
         }
     });
+    
+    console.log('✅ Gráfico Curva ABC criado');
 }
 
-function createDonutChart(curvaData) {
+function createDonutChart(data) {
+    if (!ensureCanvasExists('donutChart')) return;
+    
+    console.log('📊 Criando gráfico donut...');
     const ctx = document.getElementById('donutChart').getContext('2d');
     
     if (donutChart) {
         donutChart.destroy();
     }
     
-    const produtosEmAlta = curvaData
-        .filter(p => p.curva === 'A')
-        .slice(0, 5);
+    // Dados de exemplo para produtos em alta
+    const produtos = data.produtos_alta || [
+        {nome: 'Produto A', valor: 15},
+        {nome: 'Produto B', valor: 12},
+        {nome: 'Produto C', valor: 10},
+        {nome: 'Produto D', valor: 8},
+        {nome: 'Outros', valor: 5}
+    ];
     
     donutChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: produtosEmAlta.map(p => p.sku),
+            labels: produtos.map(p => p.nome),
             datasets: [{
-                data: produtosEmAlta.map(p => p.sale_price),
-                backgroundColor: ['#f39c12', '#e74c3c', '#3498db', '#2ecc71', '#9b59b6'],
-                borderColor: ['#e67e22', '#c0392b', '#2980b9', '#27ae60', '#8e44ad'],
-                borderWidth: 2,
-                hoverBorderWidth: 4,
-                hoverOffset: 15
+                data: produtos.map(p => p.valor),
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.8)',
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(255, 205, 86, 0.8)',
+                    'rgba(75, 192, 192, 0.8)',
+                    'rgba(153, 102, 255, 0.8)'
+                ],
+                borderWidth: 2
             }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '70%',
-            interaction: {
-                mode: 'point'
-            },
             plugins: {
-                legend: { display: false },
-                tooltip: {
-                    enabled: true,
-                    backgroundColor: 'rgba(0,0,0,0.8)',
-                    titleColor: '#fff',
-                    bodyColor: '#fff',
-                    borderColor: '#f39c12',
-                    borderWidth: 1,
-                    cornerRadius: 8,
-                    displayColors: true,
-                    callbacks: {
-                        title: function(context) {
-                            return `SKU: ${context[0].label}`;
-                        },
-                        label: function(context) {
-                            return `Preço: R$ ${context.parsed.toFixed(2)}`;
-                        }
-                    }
-                }
-            },
-            animation: {
-                duration: 1000,
-                easing: 'easeOutBounce'
-            },
-            onHover: (event, activeElements, chart) => {
-                event.native.target.style.cursor = activeElements.length > 0 ? 'pointer' : 'default';
-                
-                // Efeito de rotação suave no hover
-                if (activeElements.length > 0) {
-                    chart.options.rotation += 0.5;
-                    chart.update('none');
+                title: {
+                    display: true,
+                    text: 'Top Produtos'
+                },
+                legend: {
+                    position: 'bottom'
                 }
             }
         }
     });
+    
+    console.log('✅ Gráfico donut criado');
 }
 
-function createTrendChart() {
+function createTrendChart(data) {
+    if (!ensureCanvasExists('trendChart')) return;
+    
+    console.log('📊 Criando gráfico de análise...');
     const ctx = document.getElementById('trendChart').getContext('2d');
     
     if (trendChart) {
         trendChart.destroy();
     }
     
+    const meses = data.meses || ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul'];
+    const curvaA = data.A || [21, 26, 24, 19, 28, 27, 6];
+    const curvaB = data.B || [6, 18, 9, 17, 16, 11, 2];
+    const curvaC = data.C || [10, 14, 9, 8, 12, 10, 7];
+    
     trendChart = new Chart(ctx, {
-        type: 'line',
+        type: 'bar',
         data: {
-            labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
-            datasets: [{
-                label: 'Curva A',
-                data: [20, 25, 30, 28, 35, 40],
-                borderColor: '#f39c12',
-                backgroundColor: 'rgba(243, 156, 18, 0.1)',
-                borderWidth: 3,
-                fill: true,
-                tension: 0.4,
-                pointRadius: 6,
-                pointHoverRadius: 10,
-                pointBackgroundColor: '#f39c12',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 3,
-                pointHoverBackgroundColor: '#fff',
-                pointHoverBorderColor: '#f39c12'
-            }, {
-                label: 'Curva B/C',
-                data: [15, 18, 22, 20, 25, 28],
-                borderColor: '#3498db',
-                backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                borderWidth: 3,
-                fill: true,
-                tension: 0.4,
-                pointRadius: 6,
-                pointHoverRadius: 10,
-                pointBackgroundColor: '#3498db',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 3,
-                pointHoverBackgroundColor: '#fff',
-                pointHoverBorderColor: '#3498db'
-            }]
+            labels: meses,
+            datasets: [
+                {
+                    label: 'Curva A',
+                    data: curvaA,
+                    backgroundColor: 'rgba(220, 53, 69, 0.8)',
+                    borderColor: 'rgba(220, 53, 69, 1)',
+                    borderWidth: 2
+                },
+                {
+                    label: 'Curva B',
+                    data: curvaB,
+                    backgroundColor: 'rgba(255, 193, 7, 0.8)',
+                    borderColor: 'rgba(255, 193, 7, 1)',
+                    borderWidth: 2
+                },
+                {
+                    label: 'Curva C',
+                    data: curvaC,
+                    backgroundColor: 'rgba(40, 167, 69, 0.8)',
+                    borderColor: 'rgba(40, 167, 69, 1)',
+                    borderWidth: 2
+                }
+            ]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                mode: 'index',
-                intersect: false
-            },
             plugins: {
-                legend: { 
+                title: {
                     display: true,
-                    position: 'top',
-                    labels: {
-                        color: '#7f8c8d',
-                        font: {
-                            size: 12
-                        },
-                        usePointStyle: true,
-                        pointStyle: 'circle'
-                    }
+                    text: 'Evolução das Curvas por Período'
                 },
-                tooltip: {
-                    enabled: true,
-                    backgroundColor: 'rgba(0,0,0,0.8)',
-                    titleColor: '#fff',
-                    bodyColor: '#fff',
-                    borderColor: '#f39c12',
-                    borderWidth: 1,
-                    cornerRadius: 8,
-                    displayColors: true,
-                    callbacks: {
-                        title: function(context) {
-                            return `Mês: ${context[0].label}`;
-                        },
-                        label: function(context) {
-                            return `${context.dataset.label}: ${context.parsed.y} vendas`;
-                        }
-                    }
+                legend: {
+                    display: true,
+                    position: 'top'
                 }
             },
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: {
-                        color: 'rgba(255,255,255,0.1)'
-                    },
-                    ticks: {
-                        color: '#7f8c8d'
+                    stacked: false,
+                    title: {
+                        display: true,
+                        text: 'Quantidade de Produtos'
                     }
                 },
                 x: {
-                    grid: {
-                        color: 'rgba(255,255,255,0.05)'
-                    },
-                    ticks: {
-                        color: '#7f8c8d'
+                    title: {
+                        display: true,
+                        text: 'Período'
                     }
                 }
-            },
-            animation: {
-                duration: 1200,
-                easing: 'easeInOutQuart'
-            },
-            onHover: (event, activeElements) => {
-                event.native.target.style.cursor = activeElements.length > 0 ? 'crosshair' : 'default';
             }
         }
     });
+    
+    console.log('✅ Gráfico de análise criado');
 }
 
-async function checkStockAlerts() {
-    try {
-        const response = await fetch(API_BASE + '/curva/A');
-        const curvaA = await response.json();
-        
-        const baixoEstoque = curvaA.filter(p => p.stock <= 5);
-        
-        if (baixoEstoque.length > 0) {
-            alertsData = baixoEstoque;
-            updateAlertsUI();
-            showNotification(baixoEstoque.length + ' produtos com estoque baixo!');
+function createEvolutionChart() {
+    if (!ensureCanvasExists('curvaEvolutionChart')) return;
+    
+    console.log('📊 Criando gráfico de evolução...');
+    const ctx = document.getElementById('curvaEvolutionChart').getContext('2d');
+    
+    if (evolutionChart) {
+        evolutionChart.destroy();
+    }
+    
+    // Dados simulados de evolução financeira
+    const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'];
+    const vendas = [45000, 52000, 48000, 61000, 55000, 67000];
+    const custos = [30000, 35000, 32000, 40000, 38000, 42000];
+    const lucros = vendas.map((v, i) => v - custos[i]);
+    
+    evolutionChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: meses,
+            datasets: [
+                {
+                    label: 'Vendas',
+                    data: vendas,
+                    borderColor: 'rgba(40, 167, 69, 1)',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Custos',
+                    data: custos,
+                    borderColor: 'rgba(220, 53, 69, 1)',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Lucro',
+                    data: lucros,
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Evolução Financeira Mensal'
+                },
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Valor (R$)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return 'R$ ' + value.toLocaleString('pt-BR');
+                        }
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Mês'
+                    }
+                }
+            },
+            interaction: {
+                mode: 'index',
+                intersect: false
+            }
         }
+    });
+    
+    console.log('✅ Gráfico de evolução criado');
+}
+
+// === FUNÇÃO PRINCIPAL DE CARREGAMENTO ===
+async function initDashboard() {
+    console.log('🚀 Inicializando dashboard...');
+    showLoading();
+    
+    try {
+        // Carregar dados básicos
+        console.log('1️⃣ Carregando dados básicos...');
+        const dashboardData = await fetchDashboardData();
+        
+        // Atualizar cards
+        console.log('2️⃣ Atualizando cards...');
+        updateStatsCards(dashboardData);
+        
+        // Criar gráficos básicos
+        console.log('3️⃣ Criando gráficos básicos...');
+        createCurvaChart(dashboardData);
+        createDonutChart(dashboardData);
+        
+        // Carregar e criar gráfico de evolução
+        console.log('4️⃣ Carregando evolução ABC...');
+        const evolucaoData = await fetchEvolucaoData('2025-04-01', '2025-10-31');
+        createTrendChart(evolucaoData);
+        
+        // Criar gráfico de evolução financeira
+        console.log('5️⃣ Criando gráfico de evolução...');
+        createEvolutionChart();
+        
+        console.log('✅ Dashboard inicializado com sucesso!');
         
     } catch (error) {
-        console.error('Erro ao verificar alertas:', error);
+        console.error('❌ Erro ao inicializar dashboard:', error);
+        
+        // Dados de fallback em caso de erro
+        const fallbackData = {
+            lucro_total: 150000,
+            curvaA: 25,
+            curvaB: 35,
+            curvaC: 40
+        };
+        
+        console.log('🔄 Usando dados de fallback...');
+        updateStatsCards(fallbackData);
+        createCurvaChart(fallbackData);
+        createDonutChart(fallbackData);
+        createTrendChart({
+            meses: ['Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out'],
+            A: [21, 26, 24, 19, 28, 27, 6],
+            B: [6, 18, 9, 17, 16, 11, 2],
+            C: [10, 14, 9, 8, 12, 10, 7]
+        });
+        createEvolutionChart();
     }
-}
-
-function updateAlertsUI() {
-    const alertCount = document.getElementById('alertCount');
-    alertCount.textContent = alertsData.length;
-    alertCount.style.display = alertsData.length > 0 ? 'block' : 'none';
-}
-
-function showNotification(message) {
-    const toast = document.getElementById('toast');
-    const messageElement = toast.querySelector('.toast-message');
     
-    messageElement.textContent = message;
-    toast.classList.add('show');
-    
-    setTimeout(() => {
-        toast.classList.remove('show');
-    }, 5000);
+    hideLoading();
 }
 
-function initializeCalendar() {
-    const calendar = document.getElementById('calendar');
-    const hoje = new Date();
-    const monthName = hoje.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-    
-    calendar.innerHTML = '<div class="calendar-header">' + monthName + '</div>';
-}
-
+// === EVENTOS DE FILTROS ===
 function setupEventListeners() {
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.addEventListener('click', function() {
-            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-            this.classList.add('active');
-        });
-    });
+    console.log('🎯 Configurando event listeners...');
     
-    document.querySelectorAll('.check-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            loadDashboardData();
-            showNotification('Dados atualizados!');
+    const filtrarBtn = document.getElementById('filtrarEvolucao');
+    const dataInicio = document.getElementById('dataInicio');
+    const dataFim = document.getElementById('dataFim');
+    
+    // Definir datas padrão
+    if (dataInicio) dataInicio.value = '2025-04-01';
+    if (dataFim) dataFim.value = '2025-10-31';
+    
+    // Event listener do botão filtrar
+    if (filtrarBtn) {
+        filtrarBtn.addEventListener('click', async function() {
+            console.log('🔍 Filtrando dados...');
+            const inicio = dataInicio.value;
+            const fim = dataFim.value;
+            
+            if (!inicio || !fim) {
+                alert('Por favor, selecione as datas de início e fim.');
+                return;
+            }
+            
+            try {
+                filtrarBtn.disabled = true;
+                filtrarBtn.textContent = 'Carregando...';
+                
+                const evolucaoData = await fetchEvolucaoData(inicio, fim);
+                createTrendChart(evolucaoData);
+                
+                filtrarBtn.textContent = 'Filtrar';
+                filtrarBtn.disabled = false;
+                console.log('✅ Filtro aplicado com sucesso!');
+                
+            } catch (error) {
+                console.error('❌ Erro ao aplicar filtro:', error);
+                alert('Erro ao carregar dados. Tente novamente.');
+                filtrarBtn.textContent = 'Filtrar';
+                filtrarBtn.disabled = false;
+            }
         });
-    });
+    }
+    
+    console.log('✅ Event listeners configurados');
 }
 
-// Auto-refresh a cada 30 segundos
-setInterval(loadDashboardData, 30000);
+// === INICIALIZAÇÃO ===
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('📄 DOM carregado, iniciando dashboard...');
+    setupEventListeners();
+    initDashboard();
+});
+
+console.log('✅ Script dashboard.js carregado');

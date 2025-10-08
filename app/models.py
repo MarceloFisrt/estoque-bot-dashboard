@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, Numeric, DateTime, CHAR, ForeignKey, JSON, func
 from .database import Base
+from datetime import datetime
 
 class Product(Base):
 	__tablename__ = "products"
@@ -13,6 +14,7 @@ class Product(Base):
 	margin_percent = Column(Numeric(6,2))
 	curve = Column(CHAR(1))
 	last_sync = Column(DateTime, server_default=func.now(), onupdate=func.now())
+	created_at = Column(DateTime, default=datetime.utcnow)
 
 class CompetitorPrice(Base):
 	__tablename__ = "competitor_prices"
