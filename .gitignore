@@ -18,6 +18,30 @@ var/
 wheels/
 share/python-wheels/
 *.egg-info/
+
+# Database files
+*.db
+*.sqlite3
+
+# Temporary and utility files
+*.zip
+ngrok.exe
+*.log
+
+# Scripts de teste e utilitários
+test_*.py
+check_*.py
+debug_*.py
+verificar_*.py
+analisar_*.py
+expandir_*.py
+recriar_*.py
+generate_*.py
+teste_*.py
+
+# Backup files
+*.bak
+*.backup
 .installed.cfg
 *.egg
 MANIFEST

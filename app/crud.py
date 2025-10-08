@@ -252,3 +252,29 @@ def evolucao_curva_abc(db: Session, data_inicio: datetime, data_fim: datetime):
         .order_by('mes')
     )
     return query.all()
+
+
+def clear_all_products(db: Session):
+    """
+    Remove todos os produtos do banco de dados
+    """
+    db.query(models.Product).delete()
+    db.commit()
+
+
+def create_product(db: Session, product_data: dict):
+    """
+    Criar um novo produto no banco de dados
+    """
+    db_product = models.Product(
+        sku=product_data.get('sku'),
+        name=product_data.get('name'),
+        cost_price=product_data.get('cost_price'),
+        sale_price=product_data.get('sale_price'),
+        stock=product_data.get('stock'),
+        curve=product_data.get('curve', 'C')
+    )
+    db.add(db_product)
+    db.commit()
+    db.refresh(db_product)
+    return db_product

@@ -1,7 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
+  <meta charse        <div class="kpi-card">
+          <div class="kpi-icon">🏆</div>
+          <div class="kpi-content">
+            <h3>Curva A</h3>
+            <div class="kpi-value" id="curvaA">0</div>
+          </div>
+        </div>8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title> Grafico Estratégico</title>
   <link rel="stylesheet" href="/static/css/style.css">
@@ -59,7 +65,7 @@
           </div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-icon">📦</div>
+          <div class="kpi-icon">�</div>
           <div class="kpi-content">
             <h3>Curva A</h3>
             <div class="kpi-value" id="curvaA">0</div>
@@ -127,6 +133,31 @@
           <div class="chart-header">
             <h3>Distribuição Curva ABC</h3>
             <span class="chart-badge" id="chartBadge">Atualizado</span>
+          </div>
+          <div class="abc-info-section">
+            <div class="abc-legend">
+              <div class="abc-item curva-a">
+                <div class="abc-color"></div>
+                <div class="abc-content">
+                  <strong>Curva A</strong>
+                  <span>Alto valor em estoque (80% do valor total)</span>
+                </div>
+              </div>
+              <div class="abc-item curva-b">
+                <div class="abc-color"></div>
+                <div class="abc-content">
+                  <strong>Curva B</strong>
+                  <span>Médio valor em estoque (15% do valor total)</span>
+                </div>
+              </div>
+              <div class="abc-item curva-c">
+                <div class="abc-color"></div>
+                <div class="abc-content">
+                  <strong>Curva C</strong>
+                  <span>Baixo valor em estoque (5% do valor total)</span>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="chart-container">
             <canvas id="curvaChart"></canvas>
