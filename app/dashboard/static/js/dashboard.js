@@ -519,6 +519,163 @@ async function fetchProdutosPorCurva(curva = '') {
     }
 }
 
+// === FUNÇÕES PARA CARREGAR PRODUTOS DO TINY ERP ===
+async function carregarProdutos(filtro = '') {
+    console.log('🔄 Carregando produtos do Tiny ERP...');
+    const tbody = document.getElementById('produtosTableBody');
+    
+    if (!tbody) {
+        console.error('❌ Tabela de produtos não encontrada');
+        return;
+    }
+    
+    // Mostrar loading
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="7" style="text-align: center; padding: 20px;">
+                <div style="color: #ffd700;">
+                    🔄 Carregando produtos do Tiny ERP...
+                </div>
+            </td>
+        </tr>
+    `;
+    
+    try {
+        // Primeiro tentar buscar produtos em tempo real do Tiny
+        const response = await fetch(`${API_BASE}/api/tempo-real/produtos?filtros=NR,GB,CP,KIT`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ Dados recebidos do Tiny:', data);
+        
+        if (data.status === 'concluido' && data.produtos && data.produtos.length > 0) {
+            let produtos = data.produtos;
+            
+            // Aplicar filtro se necessário
+            if (filtro && filtro !== '') {
+                produtos = produtos.filter(produto => {
+                    const sku = produto.sku || '';
+                    return sku.startsWith(filtro) || (filtro === 'A' || filtro === 'B' || filtro === 'C');
+                });
+            }
+            
+            renderizarTabelaProdutos(produtos);
+            
+            // Atualizar estatísticas
+            document.getElementById('totalProdutosLabel').textContent = produtos.length;
+            
+        } else {
+            // Fallback: tentar buscar produtos do banco local
+            console.log('⚠️ Tentando fallback com produtos locais...');
+            await carregarProdutosLocal(filtro);
+        }
+        
+    } catch (error) {
+        console.error('❌ Erro ao carregar produtos:', error);
+        // Fallback: tentar buscar produtos do banco local
+        await carregarProdutosLocal(filtro);
+    }
+}
+
+async function carregarProdutosLocal(filtro = '') {
+    try {
+        const response = await fetch(`${API_BASE}/api/produtos`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const produtos = await response.json();
+        console.log('✅ Produtos locais carregados:', produtos.length);
+        
+        // Aplicar filtro se necessário
+        let produtosFiltrados = produtos;
+        if (filtro && filtro !== '') {
+            produtosFiltrados = produtos.filter(produto => {
+                if (filtro === 'A' || filtro === 'B' || filtro === 'C') {
+                    return produto.curva_abc === filtro;
+                }
+                const sku = produto.codigo || '';
+                return sku.startsWith(filtro);
+            });
+        }
+        
+        renderizarTabelaProdutos(produtosFiltrados, true);
+        
+    } catch (error) {
+        console.error('❌ Erro ao carregar produtos locais:', error);
+        const tbody = document.getElementById('produtosTableBody');
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 20px; color: #ff6b6b;">
+                    ❌ Erro ao carregar produtos. Tente novamente.
+                </td>
+            </tr>
+        `;
+    }
+}
+
+function renderizarTabelaProdutos(produtos, isLocal = false) {
+    const tbody = document.getElementById('produtosTableBody');
+    
+    if (!produtos || produtos.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 20px;">
+                    📭 Nenhum produto encontrado
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    let html = '';
+    
+    produtos.forEach(produto => {
+        // Adaptar campos dependendo da fonte (Tiny vs Local)
+        const sku = isLocal ? (produto.codigo || produto.sku) : produto.sku;
+        const nome = isLocal ? produto.nome : produto.nome;
+        const estoque = isLocal ? produto.estoque_atual : produto.estoque_atual;
+        const preco = isLocal ? produto.preco_venda : produto.preco_venda;
+        const curva = isLocal ? produto.curva_abc : 'N/A';
+        const localizacao = isLocal ? produto.localizacao : produto.localizacao;
+        
+        const valorTotal = (estoque || 0) * (preco || 0);
+        const statusEstoque = estoque > 0 ? 'Em Estoque' : 'Sem Estoque';
+        const statusClass = estoque > 0 ? 'status-ok' : 'status-alert';
+        const curvaEmoji = getCurvaEmoji(curva);
+        
+        // Determinar categoria baseada no SKU
+        let categoria = 'Outros';
+        if (sku) {
+            if (sku.startsWith('NR')) categoria = 'Nacional';
+            else if (sku.startsWith('GB')) categoria = 'Global';
+            else if (sku.startsWith('CP')) categoria = 'Compra';
+            else if (sku.startsWith('KIT')) categoria = 'Kit';
+        }
+        
+        html += `
+            <tr class="produto-row">
+                <td class="sku-cell">${sku || 'N/A'}</td>
+                <td class="nome-cell" title="${nome || 'N/A'}">${nome || 'Produto sem nome'}</td>
+                <td class="categoria-cell">${categoria}</td>
+                <td class="estoque-cell">${estoque || 0}</td>
+                <td class="valor-cell">${formatarMoeda(valorTotal)}</td>
+                <td class="curva-cell">${curvaEmoji} ${curva || 'N/A'}</td>
+                <td class="status-cell">
+                    <span class="status-badge ${statusClass}">${statusEstoque}</span>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+    console.log(`✅ Tabela renderizada com ${produtos.length} produtos`);
+}
+
 function formatarMoeda(valor) {
     return new Intl.NumberFormat('pt-BR', {
         style: 'currency',
@@ -702,6 +859,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initProdutos(); // Inicializar seção de produtos
     initTabs(); // Inicializar abas
     initProdutoFilters(); // Inicializar filtros de produtos
+    initSidebarNavigation(); // Inicializar navegação do sidebar
 });
 
 console.log('✅ Script dashboard.js carregado');
@@ -731,6 +889,81 @@ function initTabs() {
             }
         });
     });
+}
+
+// === NAVEGAÇÃO DO SIDEBAR ===
+function initSidebarNavigation() {
+    const navItems = document.querySelectorAll('.nav-item[data-tab]');
+    
+    navItems.forEach(navItem => {
+        navItem.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            const tabName = navItem.getAttribute('data-tab');
+            console.log(`🔄 Navegando para aba: ${tabName}`);
+            
+            // Remove active de todos os nav-items
+            navItems.forEach(item => item.classList.remove('active'));
+            
+            // Adiciona active no item clicado
+            navItem.classList.add('active');
+            
+            // Mostra o conteúdo da aba correspondente
+            showTabContent(tabName);
+            
+            // Executa ação específica da aba
+            switch(tabName) {
+                case 'produtos':
+                    console.log('🛍️ Carregando produtos do Tiny ERP...');
+                    carregarProdutos();
+                    break;
+                case 'tempo-real':
+                    console.log('🔴 Carregando dados em tempo real...');
+                    buscarDadosTempoReal();
+                    break;
+                case 'relatorios':
+                    console.log('📊 Carregando relatórios...');
+                    break;
+                case 'dashboard':
+                default:
+                    console.log('🏠 Carregando dashboard principal...');
+                    initDashboard();
+                    break;
+            }
+        });
+    });
+    
+    // Event listener para o filtro de produtos
+    const produtoFiltro = document.getElementById('produtoFiltro');
+    if (produtoFiltro) {
+        produtoFiltro.addEventListener('change', function() {
+            const filtroSelecionado = this.value;
+            console.log(`🔍 Filtro selecionado: ${filtroSelecionado}`);
+            carregarProdutos(filtroSelecionado);
+        });
+    }
+}
+
+function showTabContent(tabName) {
+    // Esconder todas as seções de conteúdo
+    const allTabContents = document.querySelectorAll('.tab-content, .main-content > div');
+    allTabContents.forEach(content => {
+        content.style.display = 'none';
+    });
+    
+    // Mostrar o conteúdo da aba selecionada
+    const targetContent = document.getElementById(`${tabName}-content`);
+    if (targetContent) {
+        targetContent.style.display = 'block';
+        console.log(`✅ Conteúdo da aba ${tabName} exibido`);
+    } else {
+        // Se não encontrar o conteúdo específico, mostrar o dashboard principal
+        const dashboardContent = document.querySelector('.main-content .charts-grid');
+        if (dashboardContent && tabName === 'dashboard') {
+            dashboardContent.parentElement.style.display = 'block';
+        }
+        console.log(`⚠️ Conteúdo da aba ${tabName} não encontrado`);
+    }
 }
 
 // === FUNCIONALIDADE DA ABA PRODUTOS ===

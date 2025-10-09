@@ -59,7 +59,7 @@ class TinyAPI:
         """Busca produtos com filtros específicos"""
         produtos_encontrados = []
         pagina = 1
-        max_paginas = 5  # Limitar para evitar timeout
+        max_paginas = 2  # Reduzir para evitar rate limit
         
         while pagina <= max_paginas:
             try:
@@ -93,7 +93,7 @@ class TinyAPI:
                 if not produtos:
                     break
                 
-                # Filtrar produtos por SKU
+                # Filtrar produtos por SKU e processar dados básicos sem buscar detalhes
                 for produto_item in produtos:
                     produto = produto_item.get('produto', {})
                     sku = produto.get('codigo', '').strip().upper()
@@ -101,12 +101,29 @@ class TinyAPI:
                     
                     # Verificar se SKU começa com algum filtro
                     if any(sku.startswith(filtro) for filtro in filtros):
-                        # Buscar detalhes do produto
-                        detalhes = self._buscar_detalhes_produto(produto.get('id'), sku, nome)
-                        if detalhes:
-                            produtos_encontrados.append(detalhes)
+                        # Usar dados básicos disponíveis sem buscar detalhes (evita rate limit)
+                        produto_basico = {
+                            'id': produto.get('id'),
+                            'sku': sku,
+                            'nome': nome or f"Produto {sku}",
+                            'preco_custo': float(produto.get('preco_custo', 0) or 0),
+                            'preco_venda': float(produto.get('preco', 0) or 0),
+                            'estoque_atual': 0,  # Será atualizado depois se necessário
+                            'localizacao': 'Não informado',
+                            'situacao': produto.get('situacao', ''),
+                            'unidade': produto.get('unidade', 'UN'),
+                            'valor_total': 0.0
+                        }
+                        
+                        # Calcular valor total do estoque
+                        produto_basico['valor_total'] = produto_basico['preco_venda'] * produto_basico['estoque_atual']
+                        
+                        produtos_encontrados.append(produto_basico)
                 
                 pagina += 1
+                
+                # Adicionar delay para evitar rate limit
+                time.sleep(0.5)
                 
             except requests.exceptions.Timeout:
                 logger.warning(f"Timeout na página {pagina}")
