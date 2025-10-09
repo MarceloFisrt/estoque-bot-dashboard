@@ -33,6 +33,7 @@ def get_produtos_por_curva(db: Session, tipo: str) -> List[Dict[str, Any]]:
             "cost_price": round(cost, 2),
             "sale_price": round(sale, 2),
             "stock": int(p.stock or 0),
+            "location": p.location or "Não informado",
             "margem_percent": margem_percent,
             "curve": p.curve
         })
@@ -69,21 +70,19 @@ def get_curva_abc(db: Session) -> List[Dict[str, Any]]:
     # ordena por valor_total desc
     items.sort(key=lambda x: x["valor_total"], reverse=True)
 
-    soma = sum(x["valor_total"] for x in items)
-    acumulado = 0.0
+    total_produtos = len(items)
     out = []
 
-    for it in items:
-        acumulado += it["valor_total"]
-        perc_acum = (acumulado / soma * 100) if soma > 0 else 0.0
+    for i, it in enumerate(items):
+        # Distribuição baseada na posição na lista ordenada por valor
+        # 20% dos produtos mais valiosos = Curva A
+        # 30% seguintes = Curva B  
+        # 50% restantes = Curva C
+        posicao_percentual = (i + 1) / total_produtos * 100
         
-        # Determinar curva baseado no percentual acumulado
-        # Os primeiros produtos que somam até 80% = Curva A
-        # Os próximos que somam de 80% a 95% = Curva B  
-        # Os restantes (95% a 100%) = Curva C
-        if perc_acum <= 80:
+        if posicao_percentual <= 20:
             curva = "A"
-        elif perc_acum <= 95:
+        elif posicao_percentual <= 50:  # 20% + 30% = 50%
             curva = "B"
         else:
             curva = "C"
@@ -93,12 +92,18 @@ def get_curva_abc(db: Session) -> List[Dict[str, Any]]:
         if prod:
             prod.curve = curva
 
+        # Calcular percentual acumulado do valor para exibição
+        soma = sum(x["valor_total"] for x in items)
+        acumulado = sum(x["valor_total"] for x in items[:i+1])
+        perc_acum = (acumulado / soma * 100) if soma > 0 else 0.0
+
         out.append({
             "id": it["id"],
             "sku": it["sku"],
             "name": it["name"],
             "stock": it["stock"],
             "sale_price": round(it["sale_price"], 2),
+            "location": prod.location or "Não informado" if prod else "Não informado",
             "valor_total": round(it["valor_total"], 2),
             "perc_acumulado": round(perc_acum, 6),
             "curva": curva
@@ -272,6 +277,7 @@ def create_product(db: Session, product_data: dict):
         cost_price=product_data.get('cost_price'),
         sale_price=product_data.get('sale_price'),
         stock=product_data.get('stock'),
+        location=product_data.get('location'),
         curve=product_data.get('curve', 'C')
     )
     db.add(db_product)

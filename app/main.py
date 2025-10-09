@@ -11,17 +11,10 @@ from datetime import datetime
 from app import crud, schemas, models
 from app.database import SessionLocal
 from app.logger import get_logger
-from sqlalchemy import text
-from fastapi.responses import FileResponse
 from app.services.tiny_service import fetch_tiny_vendas, listar_produtos_tiny, fetch_tiny_estoque
-
-
-
-
-
+from app.tiny_api import tiny_api
 
 logger = get_logger()
-
 app = FastAPI()
 
 # === CORS Configuration ===
@@ -50,9 +43,15 @@ async def serve_dashboard():
     return FileResponse(dashboard_file)
 
 @app.get("/dashboard/", response_class=HTMLResponse)
-async def serve_dashboard_with_slash():
+async def serve_dashboard_alt():
     dashboard_file = Path(__file__).parent / "dashboard" / "index.html"
     return FileResponse(dashboard_file)
+
+# === Rota para favicon ===
+@app.get("/favicon.ico")
+async def serve_favicon():
+    # Retorna um favicon vazio para evitar erro 404
+    return {"detail": "Favicon not found"}
 
 def get_db():
     db = SessionLocal()
@@ -97,19 +96,73 @@ def produtos_por_curva(tipo: str, db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"Erro em /curva/{tipo}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/produtos/curva/{tipo}")
+def produtos_por_curva_alt(tipo: str, db: Session = Depends(get_db)):
+    """Endpoint alternativo para buscar produtos por curva"""
+    tipo = tipo.upper()
+    if tipo not in ("A","B","C"):
+        raise HTTPException(status_code=400, detail="Curva inválida: use A, B ou C")
+    logger.info(f"Chamando /produtos/curva/{tipo}")
+    try:
+        result = crud.get_produtos_por_curva(db, tipo)
+        return result
+    except Exception as e:
+        logger.error(f"Erro em /produtos/curva/{tipo}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/curva-abc")
+def curva_abc_endpoint(db: Session = Depends(get_db)):
+    """Endpoint para buscar todos os produtos com curva ABC"""
+    logger.info("Chamando /curva-abc")
+    try:
+        result = crud.get_curva_abc(db)
+        return result
+    except Exception as e:
+        logger.error(f"Erro em /curva-abc: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/produtos")
+def listar_todos_produtos(db: Session = Depends(get_db)):
+    """Endpoint para buscar todos os produtos com informações completas"""
+    logger.info("Chamando /api/produtos")
+    try:
+        # Buscar todos os produtos - removendo filtro 'ativo' que não existe
+        produtos = db.query(models.Product).all()
+        
+        resultado = []
+        for produto in produtos:
+            # Usar os nomes corretos dos campos da tabela products
+            estoque_atual = float(produto.stock or 0)
+            preco_venda = float(produto.sale_price or 0)
+            
+            resultado.append({
+                "id": produto.id,
+                "codigo": produto.sku,
+                "nome": produto.name,
+                "estoque_atual": estoque_atual,
+                "preco_venda": preco_venda,
+                "localizacao": getattr(produto, 'localizacao', None) or getattr(produto, 'location', None),
+                "curva_abc": produto.curve,
+                "valor_total": estoque_atual * preco_venda
+            })
+        
+        logger.info(f"Retornando {len(resultado)} produtos")
+        return resultado
+        
+    except Exception as e:
+        logger.error(f"Erro em /api/produtos: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
     
 @app.get("/lucro/curvas", response_model=List[schemas.PercentualLucro])
 def lucro_por_curva(db:Session = Depends(get_db)):
     logger.info("Chamando o /lucro/curvas")
     return crud.get_lucro_por_curva(db)
 
-
 @app.get("/lucro/porcentagem",response_model=List[schemas.PercentualLucro])
 def porcentagem_lucro_por_curva(db: Session = Depends(get_db)):
     logger.info("Chamando /lucro/porcentagem")
     return crud.get_percentual_lucro_curva(db)
-
-
 
 # --- corrigir o problema do Swagger (URL sem barra) ---
 from fastapi.openapi.utils import get_openapi
@@ -129,11 +182,11 @@ def custom_openapi():
     {"url": "http://127.0.0.1:8000/"}  # ✅ barra no final é obrigatória
     ]
 
-
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
 app.openapi = custom_openapi
+
 # Dados para o dashboard - Versão melhorada com dados mais realistas
 @app.get("/dashboard/dados")
 def get_dados_dashboard(curva: str = "todas", produto: str = ""):
@@ -220,6 +273,28 @@ def get_tiny_estoque():
     except Exception as e:
         logger.error(f"Erro em /tiny/estoque: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# === Endpoint TEMPO REAL - Busca produtos ativos da API Tiny ===
+@app.get("/api/tempo-real/produtos")
+def get_produtos_tempo_real(filtros: str = "NR,GB,CP,KIT"):
+    """
+    Busca produtos em TEMPO REAL da API do Tiny ERP
+    Filtros: NR,GB,CP,KIT (separados por vírgula)
+    """
+    logger.info(f"🔴 TEMPO REAL: Buscando produtos com filtros: {filtros}")
+    try:
+        # Converter string de filtros em lista
+        lista_filtros = [f.strip().upper() for f in filtros.split(",") if f.strip()]
+        
+        # Buscar dados em tempo real da API do Tiny
+        resultado = tiny_api.buscar_produtos_tempo_real(lista_filtros)
+        
+        logger.info(f"✅ TEMPO REAL: Encontrados {resultado['estatisticas']['total_encontrados']} produtos")
+        return resultado
+        
+    except Exception as e:
+        logger.error(f"❌ Erro no endpoint tempo real: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao buscar dados em tempo real: {str(e)}")
 
 # === Endpoint para recalcular Curva ABC ===
 @app.post("/curvaabc/recompute")
@@ -375,12 +450,3 @@ def curvaabc_evolucao(
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
-
-from app.services.tiny_service import listar_produtos_tiny
-
-@app.get("/tiny/produtos")
-def listar_produtos(pagina: int = 1):
-    """
-    Retorna os produtos diretamente da API Tiny.
-    """
-    return listar_produtos_tiny(pagina)

@@ -1,226 +1,615 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charse        <div class="kpi-card">
-          <div class="kpi-icon">🏆</div>
-          <div class="kpi-content">
-            <h3>Curva A</h3>
-            <div class="kpi-value" id="curvaA">0</div>
-          </div>
-        </div>8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title> Grafico Estratégico</title>
-  <link rel="stylesheet" href="/static/css/style.css">
+  <title>Dashboard Estratégico</title>
+  <link rel="stylesheet" href="/static/css/new-style.css">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <div class="dashboard-container">
+    <!-- Sidebar -->
     <div class="sidebar">
       <div class="profile-section">
         <div class="profile-avatar">
+          <i class="fas fa-user"></i>
         </div>
         <div class="profile-info">
-          <h3>GRAFICO ESTRATEGICO</h3>
-          <pre><p>            Grupo
-      Nautica Refrigeração
-          </p></pre>
+          <h3>Nome</h3>
         </div>
       </div>
+      
       <nav class="sidebar-nav">
-        <a href="#" class="nav-item active">
-          <span class="nav-icon">🏠</span>
-          <span>Dashboard</span>
+        <a href="#" class="nav-item active" data-tab="dashboard">
+          <span class="nav-text">INÍCIO</span>
         </a>
-        <a href="#" class="nav-item">
-          <span class="nav-icon">📊</span>
-          <span>Curva ABC</span>
+        <a href="#" class="nav-item" data-tab="produtos">
+          <span class="nav-text">PRODUTOS</span>
         </a>
-        <a href="#" class="nav-item">
-          <span class="nav-icon">📋</span>
-          <span>Produtos</span>
+        <a href="#" class="nav-item" data-tab="relatorios">
+          <span class="nav-text">RELATÓRIOS</span>
         </a>
-        <a href="#" class="nav-item">
-          <span class="nav-icon">🔔</span>
-          <span>Alertas</span>
+        <a href="#" class="nav-item" data-tab="tempo-real">
+          <span class="nav-text">🔴 TEMPO REAL</span>
+        </a>
+        <div class="nav-separator"></div>
+        <a href="#" class="nav-item special">
+          <span class="nav-text">ALERTA ESTOQUE</span>
+        </a>
+        <a href="#" class="nav-item special">
+          <span class="nav-text">CURVA ABC</span>
         </a>
       </nav>
     </div>
+
+    <!-- Main Content -->
     <div class="main-content">
-      <div class="header">
-        <h1>ANALISE GRÁFICA</h1>
-        <div class="header-actions">
-          <div class="notification-bell" id="alertBell">
-            <span class="bell-icon">🔔</span>
-            <span class="notification-count" id="alertCount">0</span>
+      <!-- Tab Content: Dashboard -->
+      <div id="dashboard-content" class="tab-content active">
+        <!-- Top Navigation Tabs -->
+        <div class="top-tabs">
+          <button class="top-tab active">📊 Dashboard</button>
+          <button class="top-tab">📦 Produtos</button>
+          <button class="top-tab">📈 Relatórios</button>
+        </div>
+
+        <!-- KPI Cards Row -->
+        <div class="kpi-row">
+          <div class="kpi-card valor-total">
+            <div class="kpi-icon">💰</div>
+            <div class="kpi-content">
+              <div class="kpi-label">VALOR TOTAL</div>
+              <div class="kpi-value" id="valorTotal">R$ 445.155,63</div>
+            </div>
+          </div>
+          
+          <div class="kpi-card curva-a">
+            <div class="kpi-icon">⭐</div>
+            <div class="kpi-content">
+              <div class="kpi-label">CURVA A</div>
+              <div class="kpi-value" id="curvaA">13</div>
+            </div>
+          </div>
+          
+          <div class="kpi-card total-produtos">
+            <div class="kpi-icon">📋</div>
+            <div class="kpi-content">
+              <div class="kpi-label">TOTAL</div>
+              <div class="kpi-value" id="totalProdutos">309</div>
+            </div>
+          </div>
+          
+          <div class="kpi-card vendas-mes">
+            <div class="kpi-icon">📊</div>
+            <div class="kpi-content">
+              <div class="kpi-label">VENDAS DO MÊS</div>
+              <div class="kpi-value" id="vendasMes">R$ 75.791,203</div>
+            </div>
+          </div>
+          
+          <div class="kpi-card meta-vendas">
+            <div class="kpi-icon">🎯</div>
+            <div class="kpi-content">
+              <div class="kpi-label">META VENDAS</div>
+              <div class="kpi-value" id="metaVendas">R$ 25.000,00</div>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="kpi-grid">
-        <div class="kpi-card earning">
-          <div class="kpi-icon">💰</div>
-          <div class="kpi-content">
-            <h3>Valor Total</h3>
-            <div class="kpi-value" id="valorTotal">R$ 0</div>
+
+        <!-- Info Bar -->
+        <div class="info-bar">
+          <div class="info-item">
+            <span class="info-icon">📊</span>
+            <span class="info-label">CRESCIMENTO:</span>
+            <span class="info-value growth">8.5%</span>
+          </div>
+          <div class="info-item">
+            <span class="info-icon">📈</span>
+            <span class="info-label">TOTAL PRODUTOS:</span>
+            <span class="info-value">319</span>
           </div>
         </div>
-        <div class="kpi-card">
-          <div class="kpi-icon">�</div>
-          <div class="kpi-content">
-            <h3>Curva A</h3>
-            <div class="kpi-value" id="curvaA">0</div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+          <div class="status-item">
+            <span class="status-label">Última Atualização:</span>
+            <span class="status-value">09/10/2025 11:02</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Fonte:</span>
+            <span class="status-value">Dados Reais do Tiny ERP</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Status:</span>
+            <span class="status-value online">Todos os dados</span>
           </div>
         </div>
-        <div class="kpi-card">
-          <div class="kpi-icon">📋</div>
-          <div class="kpi-content">
-            <h3>Curva B</h3>
-            <div class="kpi-value" id="curvaB">0</div>
-          </div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-icon">⭐</div>
-          <div class="kpi-content">
-            <h3>Curva C</h3>
-            <div class="kpi-value" id="curvaC">0</div>
-          </div>
-        </div>
-        <div class="kpi-card sales">
-          <div class="kpi-icon">📈</div>
-          <div class="kpi-content">
-            <h3>Vendas do Mês</h3>
-            <div class="kpi-value" id="vendasMes">R$ 0</div>
-          </div>
-        </div>
-        <div class="kpi-card target">
-          <div class="kpi-icon">🎯</div>
-          <div class="kpi-content">
-            <h3>Meta Mensal</h3>
-            <div class="kpi-value" id="metaMensal">R$ 0</div>
-          </div>
-        </div>
-        <div class="kpi-card growth">
-          <div class="kpi-icon">📊</div>
-          <div class="kpi-content">
-            <h3>Crescimento</h3>
-            <div class="kpi-value" id="crescimento">0%</div>
-          </div>
-        </div>
-        <div class="kpi-card total">
-          <div class="kpi-icon">📦</div>
-          <div class="kpi-content">
-            <h3>Total Produtos</h3>
-            <div class="kpi-value" id="totalProdutos">0</div>
-          </div>
-        </div>
-      </div>
-      <div class="info-row">
-        <div class="info-card">
-          <span class="info-label">Última Atualização:</span>
-          <span class="info-value" id="ultimaAtualizacao">--</span>
-        </div>
-        <div class="info-card">
-          <span class="info-label">Fonte:</span>
-          <span class="info-value" id="fonteInfo">Sistema</span>
-        </div>
-        <div class="info-card">
-          <span class="info-label">Status:</span>
-          <span class="info-value" id="statusFiltro">Todos os dados</span>
-        </div>
-      </div>
-      <div class="charts-grid">
-        <div class="chart-card">
-          <div class="chart-header">
-            <h3>Distribuição Curva ABC</h3>
-            <span class="chart-badge" id="chartBadge">Atualizado</span>
-          </div>
-          <div class="abc-info-section">
+
+        <!-- Charts Grid -->
+        <div class="charts-grid">
+          <!-- Left Column: ABC Analysis -->
+          <div class="chart-section abc-section">
+            <div class="chart-container">
+              <h3>📊 Distribuição Curva ABC</h3>
+              <canvas id="curvaChart" style="max-height: 120px;"></canvas>
+            </div>
+            
             <div class="abc-legend">
-              <div class="abc-item curva-a">
+              <div class="abc-item curva-a" onclick="toggleCurva('A')">
                 <div class="abc-color"></div>
-                <div class="abc-content">
+                <div class="abc-text">
                   <strong>Curva A</strong>
                   <span>Alto valor em estoque (80% do valor total)</span>
                 </div>
               </div>
-              <div class="abc-item curva-b">
+              <div class="abc-item curva-b" onclick="toggleCurva('B')">
                 <div class="abc-color"></div>
-                <div class="abc-content">
+                <div class="abc-text">
                   <strong>Curva B</strong>
                   <span>Médio valor em estoque (15% do valor total)</span>
                 </div>
               </div>
-              <div class="abc-item curva-c">
+              <div class="abc-item curva-c" onclick="toggleCurva('C')">
                 <div class="abc-color"></div>
-                <div class="abc-content">
+                <div class="abc-text">
                   <strong>Curva C</strong>
                   <span>Baixo valor em estoque (5% do valor total)</span>
                 </div>
               </div>
             </div>
           </div>
-          <div class="chart-container">
-            <canvas id="curvaChart"></canvas>
-          </div>
-        </div>
-        <div class="chart-card">
-          <div class="chart-header">
-            <h3>Produtos em Alta</h3>
-            <button class="check-btn">Ver Mais</button>
-          </div>
-          <div class="chart-container">
-            <canvas id="donutChart"></canvas>
-          </div>
-          <div class="chart-legend" id="topProducts"></div>
-        </div>
-        <div class="chart-card wide">
-          <div class="chart-header">
-            <h3>Análise de Performance</h3>
-            <div class="filters-container">
-              <div class="date-filter">
-                <label for="dataInicio">De:</label>
-                <input type="date" id="dataInicio" class="date-input">
+
+          <!-- Right Column: Donut Chart -->
+          <div class="chart-section donut-section">
+            <div class="chart-container">
+              <h3>🎯 Produtos em Alta</h3>
+              <div class="donut-chart">
+                <canvas id="donutChart" style="max-height: 120px;"></canvas>
+                <div style="position: absolute; font-size: 14px; color: #666; text-align: center; font-weight: 600;">
+                  Análise de<br>Performance
+                </div>
               </div>
-              <div class="date-filter">
-                <label for="dataFim">Até:</label>
-                <input type="date" id="dataFim" class="date-input">
-              </div>
-              <button id="filtrarEvolucao" class="filter-btn">Filtrar</button>
             </div>
           </div>
-          <div class="chart-container">
-            <canvas id="trendChart"></canvas>
-          </div>
         </div>
-        <div class="chart-card wide">
-          <div class="chart-header">
-            <h3>Evolução das Curvas ABC por Mês</h3>
-            <span class="chart-badge" id="curvaEvolutionBadge">Atualizado</span>
-          </div>
-          <div class="chart-container">
-            <canvas id="curvaEvolutionChart"></canvas>
-          </div>
-        </div>
-        <div class="chart-card">
-          <div class="chart-header">
-            <h3>Alertas de Estoque</h3>
-            <span class="alert-indicator" id="alertIndicator">🟢</span>
-          </div>
-          <div class="alerts-container" id="alertsContainer">
-            <div class="no-alerts">
-              <p>✅ Nenhum alerta de estoque baixo</p>
+
+        <!-- Bottom Grid -->
+        <div class="bottom-grid">
+          <!-- Performance Analysis -->
+          <div class="chart-section performance-section">
+            <div class="chart-header">
+              <h3>📈 Análise de Performance</h3>
+              <button class="btn-atualizar" onclick="refreshPerformance()">🔄 Atualizar</button>
             </div>
+            <div class="chart-container">
+              <canvas id="performanceChart" style="max-height: 140px;"></canvas>
+            </div>
+          </div>
+
+          <!-- Evolution Chart -->
+          <div class="chart-section evolution-section">
+            <div class="chart-header">
+              <h3>📊 Evolução ABC</h3>
+              <button class="btn-atualizar" onclick="refreshEvolution()">🔄 Atualizar</button>
+            </div>
+            <div class="chart-container">
+              <canvas id="evolutionChart" style="max-height: 140px;"></canvas>
+            </div>
+          </div>
+
+          <!-- Most Sold Products -->
+          <div class="chart-section products-section">
+            <div class="chart-header">
+              <h3>🏆 Mais Vendidos</h3>
+              <button class="btn-atualizar" onclick="refreshProducts()">🔄</button>
+            </div>
+            <div class="products-list" id="produtosMaisVendidos">
+              <div style="padding: 15px; text-align: center; color: #666; font-size: 12px;">
+                <div style="margin-bottom: 10px;">📦 <strong>Produto X</strong></div>
+                <div style="margin-bottom: 10px;">📦 <strong>Produto Y</strong></div>
+                <div>📦 <strong>Produto Z</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Most Returned Products -->
+          <div class="chart-section returns-section">
+            <div class="chart-header">
+              <h3>↩️ Mais Devolvidos</h3>
+              <button class="btn-atualizar" onclick="refreshReturns()">🔄</button>
+            </div>
+            <div class="products-list" id="produtosMaisDevolvidos">
+              <div style="padding: 15px; text-align: center; color: #666; font-size: 12px;">
+                <div style="margin-bottom: 10px;">⚠️ <strong>Produto A</strong></div>
+                <div style="margin-bottom: 10px;">⚠️ <strong>Produto B</strong></div>
+                <div>⚠️ <strong>Produto C</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stock Alert -->
+          <div class="chart-section alert-section">
+            <div class="chart-header">
+              <h3>🚨 Alerta Estoque</h3>
+              <button class="btn-atualizar" onclick="refreshAlerts()">🔄</button>
+            </div>
+            <div class="alert-list" id="alertaEstoque">
+              <div style="padding: 15px; font-size: 12px;">
+                <div style="background: rgba(231, 76, 60, 0.1); padding: 8px; border-radius: 6px; margin-bottom: 8px; border-left: 3px solid #e74c3c;">
+                  <strong>🔴 PRODUTO A</strong><br>
+                  <small>Estoque crítico</small>
+                </div>
+                <div style="background: rgba(243, 156, 18, 0.1); padding: 8px; border-radius: 6px; margin-bottom: 8px; border-left: 3px solid #f39c12;">
+                  <strong>🟡 PRODUTO B</strong><br>
+                  <small>Estoque baixo</small>
+                </div>
+                <div style="background: rgba(39, 174, 96, 0.1); padding: 8px; border-radius: 6px; border-left: 3px solid #27ae60;">
+                  <strong>🟢 PRODUTO C</strong><br>
+                  <small>Estoque OK</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Products by Location -->
+          <div class="chart-section location-section">
+            <div class="chart-header">
+              <h3>📍 Produtos por Localização</h3>
+              <button class="btn-atualizar" onclick="refreshLocation()">🔄 Atualizar</button>
+            </div>
+            <div class="produtos-container" id="produtosPorLocalizacao">
+              <table style="width: 100%; border-collapse: collapse; font-size: 12px; color: white;">
+                <thead>
+                  <tr style="border-bottom: 1px solid rgba(255,255,255,0.2);">
+                    <th style="padding: 8px; text-align: left;">Local</th>
+                    <th style="padding: 8px; text-align: left;">Produto</th>
+                    <th style="padding: 8px; text-align: left;">Categoria</th>
+                    <th style="padding: 8px; text-align: right;">Valor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); transition: all 0.2s ease;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
+                    <td style="padding: 8px;">📍 A1</td>
+                    <td style="padding: 8px;"><strong>PRODUTO 1</strong></td>
+                    <td style="padding: 8px;">🏆 Principal</td>
+                    <td style="padding: 8px; text-align: right; color: #ffd700;">R$ 22.637</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); transition: all 0.2s ease;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
+                    <td style="padding: 8px;">📍 B2</td>
+                    <td style="padding: 8px;"><strong>PRODUTO 2</strong></td>
+                    <td style="padding: 8px;">🏆 Principal</td>
+                    <td style="padding: 8px; text-align: right; color: #ffd700;">R$ 22.637</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); transition: all 0.2s ease;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
+                    <td style="padding: 8px;">📍 C3</td>
+                    <td style="padding: 8px;"><strong>PRODUTO 3</strong></td>
+                    <td style="padding: 8px;">🏆 Principal</td>
+                    <td style="padding: 8px; text-align: right; color: #ffd700;">R$ 20.710</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content: Produtos -->
+      <div id="produtos-content" class="tab-content">
+        <div class="produtos-header">
+          <h2>📦 Gestão de Produtos</h2>
+          <div class="produtos-filters">
+            <select id="produtoFiltro">
+              <option value="">Todos os produtos</option>
+              <option value="A">Curva A</option>
+              <option value="B">Curva B</option>
+              <option value="C">Curva C</option>
+            </select>
+            <button class="btn-primary" onclick="carregarProdutos()">🔄 Atualizar</button>
+          </div>
+        </div>
+        <div class="produtos-table-container">
+          <table class="produtos-table">
+            <thead>
+              <tr>
+                <th>SKU</th>
+                <th>Nome</th>
+                <th>Categoria</th>
+                <th>Estoque</th>
+                <th>Valor</th>
+                <th>Curva</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="produtosTableBody">
+              <!-- Produtos serão carregados dinamicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab Content: Relatórios -->
+      <div id="relatorios-content" class="tab-content">
+        <div class="relatorios-header">
+          <h2>📈 Relatórios Estratégicos</h2>
+        </div>
+        <div class="relatorios-grid">
+          <div class="relatorio-card">
+            <h3>Análise ABC Mensal</h3>
+            <p>Evolução das curvas ABC nos últimos 12 meses</p>
+            <button class="btn-relatorio">Gerar Relatório</button>
+          </div>
+          <div class="relatorio-card">
+            <h3>Produtos Críticos</h3>
+            <p>Lista de produtos com estoque baixo ou zerado</p>
+            <button class="btn-relatorio">Gerar Relatório</button>
+          </div>
+          <div class="relatorio-card">
+            <h3>Performance de Vendas</h3>
+            <p>Análise detalhada de vendas por categoria</p>
+            <button class="btn-relatorio">Gerar Relatório</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content: Tempo Real -->
+      <div id="tempo-real-content" class="tab-content">
+        <div class="tempo-real-header">
+          <h2>🔴 Monitoramento em Tempo Real</h2>
+          <div class="tempo-real-controls">
+            <div class="filtros-tempo-real">
+              <label>
+                <input type="checkbox" id="filtroNR" checked> NR
+              </label>
+              <label>
+                <input type="checkbox" id="filtroGB" checked> GB
+              </label>
+              <label>
+                <input type="checkbox" id="filtroCP" checked> CP
+              </label>
+              <label>
+                <input type="checkbox" id="filtroKIT" checked> KIT
+              </label>
+            </div>
+            <button class="btn-tempo-real" onclick="buscarDadosTempoReal()">🔄 Buscar Agora</button>
+            <button class="btn-auto-refresh" onclick="toggleAutoRefresh()">
+              <span id="autoRefreshText">🔄 Auto-Refresh OFF</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="tempo-real-stats">
+          <div class="stat-card">
+            <div class="stat-icon">📦</div>
+            <div class="stat-content">
+              <div class="stat-label">Produtos Ativos</div>
+              <div class="stat-value" id="produtosAtivos">-</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-content">
+              <div class="stat-label">Com Estoque</div>
+              <div class="stat-value" id="comEstoque">-</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">❌</div>
+            <div class="stat-content">
+              <div class="stat-label">Sem Estoque</div>
+              <div class="stat-value" id="semEstoque">-</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">⏰</div>
+            <div class="stat-content">
+              <div class="stat-label">Última Atualização</div>
+              <div class="stat-value" id="ultimaAtualizacao">-</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tempo-real-produtos">
+          <div class="produtos-header">
+            <h3>📋 Lista de Produtos</h3>
+            <div class="status-indicator" id="statusIndicator">
+              <span class="status-dot offline"></span>
+              <span class="status-text">Aguardando dados...</span>
+            </div>
+          </div>
+          <div class="produtos-list" id="produtosTempoReal">
+            <!-- Produtos em tempo real serão carregados aqui -->
           </div>
         </div>
       </div>
     </div>
   </div>
-  <div class="toast" id="toast">
-    <div class="toast-content">
-      <i class="fas fa-exclamation-triangle"></i>
-      <span class="toast-message"></span>
-    </div>
-  </div>
+
+  <script>
+    // Navegação entre abas
+    document.addEventListener('DOMContentLoaded', function() {
+      // Navegação da sidebar
+      document.querySelectorAll('.nav-item[data-tab]').forEach(item => {
+        item.addEventListener('click', function(e) {
+          e.preventDefault();
+          const tabName = this.getAttribute('data-tab');
+          
+          // Remove active de todos os nav-items
+          document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+          this.classList.add('active');
+          
+          // Esconde todos os conteúdos das abas
+          document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+          
+          // Mostra o conteúdo da aba selecionada
+          const targetContent = document.getElementById(tabName + '-content');
+          if (targetContent) {
+            targetContent.classList.add('active');
+          }
+        });
+      });
+      
+      // Inicializar gráficos quando a página carregar
+      initializeCharts();
+    });
+
+    function initializeCharts() {
+      // Gráfico de barras para Curva ABC
+      const ctx1 = document.getElementById('curvaChart');
+      if (ctx1) {
+        new Chart(ctx1, {
+          type: 'bar',
+          data: {
+            labels: ['Curva A', 'Curva B', 'Curva C'],
+            datasets: [{
+              data: [300, 200, 100],
+              backgroundColor: ['#e74c3c', '#f39c12', '#27ae60']
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { display: false }
+            }
+          }
+        });
+      }
+
+      // Gráfico donut
+      const ctx2 = document.getElementById('donutChart');
+      if (ctx2) {
+        new Chart(ctx2, {
+          type: 'doughnut',
+          data: {
+            datasets: [{
+              data: [1],
+              backgroundColor: ['#e0e0e0'],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            cutout: '70%',
+            plugins: {
+              legend: { display: false }
+            }
+          }
+        });
+      }
+
+      // Gráfico de linha para evolução
+      const ctx3 = document.getElementById('evolutionChart');
+      if (ctx3) {
+        new Chart(ctx3, {
+          type: 'line',
+          data: {
+            labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
+            datasets: [{
+              label: 'Evolução',
+              data: [10, 15, 12, 20, 18, 25],
+              borderColor: '#3498db',
+              backgroundColor: 'rgba(52, 152, 219, 0.1)',
+              fill: true
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { display: false }
+            }
+          }
+        });
+      }
+
+      // Gráfico de performance (placeholder)
+      const ctx4 = document.getElementById('performanceChart');
+      if (ctx4) {
+        new Chart(ctx4, {
+          type: 'bar',
+          data: {
+            labels: ['Performance'],
+            datasets: [{
+              data: [1],
+              backgroundColor: ['#95a5a6']
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { display: false }
+            }
+          }
+        });
+      }
+    }
+
+    // Funções placeholder para tempo real
+    function buscarDadosTempoReal() {
+      console.log('Buscando dados em tempo real...');
+      document.getElementById('statusIndicator').innerHTML = `
+        <span class="status-dot online"></span>
+        <span class="status-text">Conectado - Dados atualizados</span>
+      `;
+    }
+
+    function toggleAutoRefresh() {
+      console.log('Toggle auto-refresh');
+    }
+
+    function carregarProdutos() {
+      console.log('Carregando produtos...');
+    }
+
+    // Funções interativas para os gráficos
+    function toggleCurva(tipo) {
+      console.log(`Toggling curva ${tipo}`);
+      // Adicionar animação de clique
+      event.target.closest('.abc-item').style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        event.target.closest('.abc-item').style.transform = 'scale(1)';
+      }, 150);
+    }
+
+    function refreshPerformance() {
+      console.log('Atualizando performance...');
+      showRefreshAnimation(event.target);
+    }
+
+    function refreshEvolution() {
+      console.log('Atualizando evolução...');
+      showRefreshAnimation(event.target);
+    }
+
+    function refreshProducts() {
+      console.log('Atualizando produtos...');
+      showRefreshAnimation(event.target);
+    }
+
+    function refreshReturns() {
+      console.log('Atualizando devoluções...');
+      showRefreshAnimation(event.target);
+    }
+
+    function refreshAlerts() {
+      console.log('Atualizando alertas...');
+      showRefreshAnimation(event.target);
+    }
+
+    function refreshLocation() {
+      console.log('Atualizando localização...');
+      showRefreshAnimation(event.target);
+    }
+
+    function showRefreshAnimation(button) {
+      button.style.transform = 'rotate(360deg)';
+      button.style.transition = 'transform 0.5s ease';
+      setTimeout(() => {
+        button.style.transform = 'rotate(0deg)';
+      }, 500);
+    }
+  </script>
   <script src="/static/js/dashboard.js"></script>
 </body>
 </html>
