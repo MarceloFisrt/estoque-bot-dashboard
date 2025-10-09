@@ -1,6 +1,6 @@
 // Dashboard Estoque Bot - Versão Otimizada
 // === CONFIGURAÇÕES GLOBAIS ===
-const API_BASE = 'http://127.0.0.1:8000';
+const API_BASE = 'http://127.0.0.1:8003';
 
 // Variáveis globais para os gráficos
 let curvaChart = null;
